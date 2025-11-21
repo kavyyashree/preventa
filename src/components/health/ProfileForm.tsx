@@ -24,7 +24,8 @@ export default function ProfileForm({ onNavigate }: Props) {
     height: '',
     weight: '',
     bloodType: '',
-    ethnicity: ''
+    ethnicity: '',
+    maritalStatus: ''
   })
 
   useEffect(() => {
@@ -36,7 +37,8 @@ export default function ProfileForm({ onNavigate }: Props) {
         height: ((user as any).height || '') as any,
         weight: ((user as any).weight || '') as any,
         bloodType: (user as any).bloodType || '',
-        ethnicity: (user as any).ethnicity || ''
+        ethnicity: (user as any).ethnicity || '',
+        maritalStatus: (user as any).maritalStatus || ''
       })
     }
   }, [user])
@@ -47,15 +49,16 @@ export default function ProfileForm({ onNavigate }: Props) {
       const res = await fetch('/api/auth/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: form.name,
-          dateOfBirth: form.dateOfBirth,
-          gender: form.gender,
-          height: form.height ? Number(form.height) : undefined,
-          weight: form.weight ? Number(form.weight) : undefined,
-          bloodType: form.bloodType,
-          ethnicity: form.ethnicity
-        })
+          body: JSON.stringify({
+            name: form.name,
+            dateOfBirth: form.dateOfBirth,
+            gender: form.gender,
+            height: form.height ? Number(form.height) : undefined,
+            weight: form.weight ? Number(form.weight) : undefined,
+            bloodType: form.bloodType,
+            ethnicity: form.ethnicity,
+            maritalStatus: form.maritalStatus
+          })
       })
       if (res.ok) {
         toast({ title: 'Profile saved', description: 'Your profile was updated successfully' })
@@ -113,6 +116,20 @@ export default function ProfileForm({ onNavigate }: Props) {
                 <Label>Weight (kg)</Label>
                 <Input value={form.weight as any} onChange={(e) => setForm({ ...form, weight: e.target.value })} />
               </div>
+            </div>
+            <div>
+              <Label>Marital Status</Label>
+              <Select value={form.maritalStatus} onValueChange={v => setForm({ ...form, maritalStatus: v })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select marital status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="single">Single</SelectItem>
+                  <SelectItem value="married">Married</SelectItem>
+                  <SelectItem value="divorced">Divorced</SelectItem>
+                  <SelectItem value="widowed">Widowed</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>Blood Type</Label>

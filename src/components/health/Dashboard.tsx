@@ -22,28 +22,72 @@ interface Props {
   familyCount?: number
 }
 
-export default function Dashboard({ onNavigate, familyCount = 0 }: Props) {
-  const { user } = useAuth()
+export default function Dashboard({ onNavigate }: Props) {
+  const { user } = useAuth();
+  const [familyCount, setFamilyCount] = React.useState(0);
+  const [riskFactors, setRiskFactors] = React.useState(0);
+  const [activePlans, setActivePlans] = React.useState(0);
+  const [healthScore, setHealthScore] = React.useState('N/A');
+
+  React.useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    // Fetch family members
+    fetch('/api/family', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        setFamilyCount(data.familyMembers ? data.familyMembers.length : 0);
+      });
+    // Fetch risk factors (replace with your endpoint)
+    fetch('/api/risk-factors', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        setRiskFactors(data.riskFactors || 0);
+      })
+      .catch(() => setRiskFactors(0));
+    // Fetch active plans (replace with your endpoint)
+    fetch('/api/plans', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        setActivePlans(data.plans ? data.plans.length : 0);
+      })
+      .catch(() => setActivePlans(0));
+    // Fetch health score (replace with your endpoint)
+    fetch('/api/health-score', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        setHealthScore(data.healthScore ? `${data.healthScore}%` : 'N/A');
+      })
+      .catch(() => setHealthScore('N/A'));
+  }, [user]);
 
   const computeProfilePercent = () => {
-    const fields = ['name', 'dateOfBirth', 'gender', 'height', 'weight', 'bloodType', 'ethnicity']
-    let filled = 0
+    const fields = ['name', 'dateOfBirth', 'gender', 'height', 'weight', 'bloodType', 'ethnicity'];
+    let filled = 0;
     if (user) {
       fields.forEach(f => {
         // @ts-ignore
-        if (user[f]) filled += 1
-      })
+        if (user[f]) filled += 1;
+      });
     }
-    if ((familyCount || 0) > 0) filled += 1
-    const percent = Math.round((filled / (fields.length + 1)) * 100)
-    return percent
-  }
-  const profilePercent = computeProfilePercent()
+    if (familyCount > 0) filled += 1;
+    const percent = Math.round((filled / (fields.length + 1)) * 100);
+    return percent;
+  };
+  const profilePercent = computeProfilePercent();
 
   const quickStats = [
     {
       title: 'Health Score',
-      value: '85%',
+      value: healthScore,
       description: 'Overall health rating',
       icon: Heart,
       color: 'text-green-600',
@@ -51,7 +95,7 @@ export default function Dashboard({ onNavigate, familyCount = 0 }: Props) {
     },
     {
       title: 'Family Members',
-      value: String(familyCount || 0),
+      value: String(familyCount),
       description: 'Added to your profile',
       icon: Users,
       color: 'text-blue-600',
@@ -59,7 +103,7 @@ export default function Dashboard({ onNavigate, familyCount = 0 }: Props) {
     },
     {
       title: 'Risk Factors',
-      value: '0',
+      value: String(riskFactors),
       description: 'Identified risks',
       icon: AlertTriangle,
       color: 'text-orange-600',
@@ -67,13 +111,13 @@ export default function Dashboard({ onNavigate, familyCount = 0 }: Props) {
     },
     {
       title: 'Active Plans',
-      value: '0',
+      value: String(activePlans),
       description: 'Diet & screening plans',
       icon: Activity,
       color: 'text-purple-600',
       bgColor: 'bg-purple-50'
     }
-  ]
+  ];
 
   const getStartedSteps = [
     {

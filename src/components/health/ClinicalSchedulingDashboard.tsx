@@ -3,6 +3,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Calendar } from 'lucide-react'
+import { useState } from 'react'
+import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { toast } from '@/hooks/use-toast'
 
 type Appointment = {
   id: string
@@ -19,12 +23,45 @@ type Props = {
 }
 
 export default function ClinicalSchedulingDashboard({ appointments }: Props) {
+  const [open, setOpen] = useState(false)
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
+  const [newDate, setNewDate] = useState('')
+
+  const handleRescheduleClick = (appointment: Appointment) => {
+    setSelectedAppointment(appointment)
+    setOpen(true)
+    setNewDate(appointment.date)
+  }
+
+  const handleConfirmReschedule = () => {
+    setOpen(false)
+    toast({
+      title: 'Appointment Scheduled',
+      description: `Appointment for ${selectedAppointment?.memberName} is scheduled on ${newDate}.`,
+      variant: 'default',
+    })
+    setSelectedAppointment(null)
+  }
+
   return (
     <div className="space-y-6">
       <div className="text-center">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Screening & Appointments</h2>
         <p className="text-gray-600">Schedule health screenings and medical appointments</p>
       </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            Reschedule Appointment
+          </DialogHeader>
+          <div className="space-y-4">
+            <p>Choose a new date for <strong>{selectedAppointment?.memberName}</strong> ({selectedAppointment?.condition}):</p>
+            <Input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} />
+            <Button className="bg-blue-600" onClick={handleConfirmReschedule}>Confirm</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {(!appointments || appointments.length === 0) ? (
         <Card className="text-center p-12">
@@ -51,7 +88,9 @@ export default function ClinicalSchedulingDashboard({ appointments }: Props) {
                     <p className="text-sm text-gray-700">Severity: {a.severity}</p>
                   </div>
                   <div>
-                    <Button className="bg-blue-600 hover:bg-blue-700">View / Reschedule</Button>
+                    <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => handleRescheduleClick(a)}>
+                      View / Reschedule
+                    </Button>
                   </div>
                 </div>
               </CardContent>

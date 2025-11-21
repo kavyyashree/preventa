@@ -46,15 +46,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkAuth = async () => {
     try {
-      const response = await fetch('/api/auth/me')
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/auth/me', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       if (response.ok) {
-        const data = await response.json()
-        setUser(data.user)
+        const data = await response.json();
+        setUser(data.user);
       }
     } catch (error) {
-      console.error('Auth check failed:', error)
+      console.error('Auth check failed:', error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
@@ -66,18 +69,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }),
-      })
-
-      const data = await response.json()
-
+      });
+      const data = await response.json();
       if (response.ok) {
-        setUser(data.user)
-        return { success: true }
+        setUser(data.user);
+        localStorage.setItem('token', data.token); // Store token
+        return { success: true };
       } else {
-        return { success: false, error: data.error }
+        return { success: false, error: data.error };
       }
     } catch (error) {
-      return { success: false, error: 'Network error' }
+      return { success: false, error: 'Network error' };
     }
   }
 
@@ -89,27 +91,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(userData),
-      })
-
-      const data = await response.json()
-
+      });
+      const data = await response.json();
       if (response.ok) {
-        setUser(data.user)
-        return { success: true }
+        setUser(data.user);
+        localStorage.setItem('token', data.token); // Store token
+        return { success: true };
       } else {
-        return { success: false, error: data.error }
+        return { success: false, error: data.error };
       }
     } catch (error) {
-      return { success: false, error: 'Network error' }
+      return { success: false, error: 'Network error' };
     }
   }
 
   const logout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' })
-      setUser(null)
+      await fetch('/api/auth/logout', { method: 'POST' });
+      setUser(null);
+      localStorage.removeItem('token');
     } catch (error) {
-      console.error('Logout failed:', error)
+      console.error('Logout failed:', error);
     }
   }
 
