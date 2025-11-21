@@ -12,7 +12,24 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Users, Plus, FileText, AlertTriangle, Upload, X, Edit, Trash2 } from 'lucide-react'
 
-interface FamilyMember {
+type MedicalCondition = {
+  id: string
+  condition: string
+  diagnosisDate: string
+  severity: 'mild' | 'moderate' | 'severe'
+  treatment: string
+  notes: string
+}
+
+type MedicalDocument = {
+  id: string
+  name: string
+  type: string
+  uploadDate: string
+  size: string
+}
+
+type FamilyMember = {
   id: string
   name: string
   relationship: string
@@ -22,25 +39,27 @@ interface FamilyMember {
   documents: MedicalDocument[]
 }
 
-interface MedicalCondition {
+interface Appointment {
   id: string
+  memberId: string
+  memberName: string
   condition: string
-  diagnosisDate: string
   severity: 'mild' | 'moderate' | 'severe'
-  treatment: string
-  notes: string
+  date: string
+  clinic: string
 }
 
-interface MedicalDocument {
-  id: string
-  name: string
-  type: string
-  uploadDate: string
-  size: string
+import { generateWeeklyDietPlan, DayPlan } from '@/lib/diet'
+
+interface Props {
+  familyMembers: FamilyMember[]
+  setFamilyMembers: (members: FamilyMember[] | ((m: FamilyMember[]) => FamilyMember[])) => void
+  onNavigate?: (tab: string) => void
+  onGenerateDiet?: (plan: DayPlan[]) => void
+  onSetAppointments?: (appts: Appointment[]) => void
 }
 
-export default function FamilyHistoryForm() {
-  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([])
+export default function FamilyHistoryForm({ familyMembers, setFamilyMembers, onNavigate, onGenerateDiet, onSetAppointments }: Props) {
   const [showAddMemberModal, setShowAddMemberModal] = useState(false)
   const [editingMember, setEditingMember] = useState<FamilyMember | null>(null)
   const [newMember, setNewMember] = useState({
@@ -147,6 +166,44 @@ export default function FamilyHistoryForm() {
     )
   }
 
+  const computeWeeklyDietPlan = (): DayPlan[] => {
+    // Use shared diet generator to include nutrient metadata and day-to-day variety
+    return generateWeeklyDietPlan(familyMembers || [])
+  }
+
+  const computeAppointments = (): Appointment[] => {
+    const appts: Appointment[] = []
+    const now = new Date()
+    familyMembers.forEach(member => {
+      member.medicalHistory.forEach(cond => {
+        let daysAhead = 30
+        if (cond.severity === 'severe') daysAhead = 7
+        else if (cond.severity === 'moderate') daysAhead = 14
+        else daysAhead = 30
+
+        const d = new Date(now)
+        d.setDate(now.getDate() + daysAhead)
+        appts.push({
+          id: Date.now().toString() + Math.random().toString().slice(2,6),
+          memberId: member.id,
+          memberName: member.name,
+          condition: cond.condition,
+          severity: cond.severity,
+          date: d.toISOString().split('T')[0],
+          clinic: cond.severity === 'severe' ? 'Urgent Care / Specialist' : 'Primary Care Clinic'
+        })
+      })
+    })
+    return appts
+  }
+
+  const handleGenerateDiet = () => {
+    const weekly = computeWeeklyDietPlan()
+    const appts = computeAppointments()
+    if (onGenerateDiet) onGenerateDiet(weekly)
+    if (onSetAppointments) onSetAppointments(appts)
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -227,10 +284,13 @@ export default function FamilyHistoryForm() {
           <Users className="w-16 h-16 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No Family Members Added</h3>
           <p className="text-gray-600 mb-4">Start by adding your family members to build your health profile</p>
-          <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => setShowAddMemberModal(true)}>
+          <div className="flex items-center justify-center gap-3">
+            <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => setShowAddMemberModal(true)}>
             <Plus className="w-4 h-4 mr-2" />
             Add Your First Family Member
           </Button>
+            <Button variant="outline" onClick={() => onNavigate && onNavigate('risk-assessment')}>Back to Risk</Button>
+          </div>
         </Card>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -245,6 +305,12 @@ export default function FamilyHistoryForm() {
               onDeleteDocument={(documentId) => deleteDocument(member.id, documentId)}
             />
           ))}
+          <div className="md:col-span-2 lg:col-span-3">
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => onNavigate && onNavigate('risk-assessment')}>Back</Button>
+              <Button onClick={handleGenerateDiet}>Generate Diet Plan</Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

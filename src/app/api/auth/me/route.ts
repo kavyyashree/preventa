@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-// In-memory user store for demo purposes
-const users = new Map<string, { email: string; name: string; password: string }>();
+import { users } from '@/lib/mockUsers';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,9 +10,8 @@ export async function GET(request: NextRequest) {
     }
 
     // For demo purposes, accept any token and return a demo user
-    // In production, you'd verify the JWT token
     const userEmail = 'demo@example.com';
-    
+
     if (!users.has(userEmail)) {
       users.set(userEmail, {
         email: userEmail,
@@ -29,7 +26,13 @@ export async function GET(request: NextRequest) {
       user: {
         id: '1',
         email: user.email,
-        name: user.name
+        name: user.name,
+        dateOfBirth: user.dateOfBirth || null,
+        gender: user.gender || null,
+        height: user.height || null,
+        weight: user.weight || null,
+        bloodType: user.bloodType || null,
+        ethnicity: user.ethnicity || null
       }
     });
   } catch (error) {

@@ -17,8 +17,28 @@ import {
   Shield
 } from 'lucide-react'
 
-export default function Dashboard() {
+interface Props {
+  onNavigate?: (tab: string) => void
+  familyCount?: number
+}
+
+export default function Dashboard({ onNavigate, familyCount = 0 }: Props) {
   const { user } = useAuth()
+
+  const computeProfilePercent = () => {
+    const fields = ['name', 'dateOfBirth', 'gender', 'height', 'weight', 'bloodType', 'ethnicity']
+    let filled = 0
+    if (user) {
+      fields.forEach(f => {
+        // @ts-ignore
+        if (user[f]) filled += 1
+      })
+    }
+    if ((familyCount || 0) > 0) filled += 1
+    const percent = Math.round((filled / (fields.length + 1)) * 100)
+    return percent
+  }
+  const profilePercent = computeProfilePercent()
 
   const quickStats = [
     {
@@ -31,7 +51,7 @@ export default function Dashboard() {
     },
     {
       title: 'Family Members',
-      value: '0',
+      value: String(familyCount || 0),
       description: 'Added to your profile',
       icon: Users,
       color: 'text-blue-600',
@@ -60,7 +80,7 @@ export default function Dashboard() {
       title: 'Complete Your Profile',
       description: 'Add your personal health information',
       icon: Users,
-      action: 'family-history',
+      action: 'profile',
       completed: false
     },
     {
@@ -175,10 +195,10 @@ export default function Dashboard() {
                     {step.completed ? (
                       <CheckCircle className="w-5 h-5 text-green-600" />
                     ) : (
-                      <Button size="sm" variant="outline">
-                        Start
-                      </Button>
-                    )}
+                          <Button size="sm" variant="outline" onClick={() => onNavigate && onNavigate(step.action)}>
+                            Start
+                          </Button>
+                        )}
                   </div>
                 )
               })}
@@ -186,9 +206,9 @@ export default function Dashboard() {
             <div className="mt-6 pt-4 border-t">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm font-medium text-gray-700">Profile Completion</span>
-                <span className="text-sm font-bold text-gray-900">0%</span>
+                <span className="text-sm font-bold text-gray-900">{profilePercent}%</span>
               </div>
-              <Progress value={0} className="h-2" />
+              <Progress value={profilePercent} className="h-2" />
             </div>
           </CardContent>
         </Card>

@@ -35,89 +35,17 @@ interface MedicalDocument {
   size: string
 }
 
-export default function FamilyTreeVisualization() {
-  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([])
+interface Props {
+  familyMembers: FamilyMember[]
+  setFamilyMembers: (members: FamilyMember[] | ((m: FamilyMember[]) => FamilyMember[])) => void
+}
+
+export default function FamilyTreeVisualization({ familyMembers, setFamilyMembers }: Props) {
   const [selectedMember, setSelectedMember] = useState<FamilyMember | null>(null)
   const [filterCondition, setFilterCondition] = useState<string>('all')
   const [viewMode, setViewMode] = useState<'tree' | 'grid'>('tree')
 
-  // In a real app, this would come from a database or API
-  useEffect(() => {
-    // Load sample data for demonstration
-    const sampleData: FamilyMember[] = [
-      {
-        id: '1',
-        name: 'John Smith',
-        relationship: 'Father',
-        age: 65,
-        gender: 'male',
-        medicalHistory: [
-          {
-            id: '1',
-            condition: 'Heart Disease',
-            diagnosisDate: '2015-03-15',
-            severity: 'moderate',
-            treatment: 'Beta blockers, statins',
-            notes: 'Family history of heart conditions'
-          },
-          {
-            id: '2',
-            condition: 'Hypertension',
-            diagnosisDate: '2010-08-20',
-            severity: 'mild',
-            treatment: 'ACE inhibitors',
-            notes: 'Well controlled with medication'
-          }
-        ],
-        documents: [
-          {
-            id: '1',
-            name: 'Cardiology_Report_2023.pdf',
-            type: 'application/pdf',
-            uploadDate: '2023-11-15',
-            size: '2.4 MB'
-          }
-        ]
-      },
-      {
-        id: '2',
-        name: 'Mary Smith',
-        relationship: 'Mother',
-        age: 62,
-        gender: 'female',
-        medicalHistory: [
-          {
-            id: '3',
-            condition: 'Diabetes Type 2',
-            diagnosisDate: '2018-05-10',
-            severity: 'moderate',
-            treatment: 'Metformin, diet control',
-            notes: 'Managed through lifestyle changes'
-          }
-        ],
-        documents: []
-      },
-      {
-        id: '3',
-        name: 'Robert Smith',
-        relationship: 'Grandfather (Paternal)',
-        age: 85,
-        gender: 'male',
-        medicalHistory: [
-          {
-            id: '4',
-            condition: 'Prostate Cancer',
-            diagnosisDate: '2005-02-28',
-            severity: 'severe',
-            treatment: 'Surgery, radiation therapy',
-            notes: 'In remission since 2006'
-          }
-        ],
-        documents: []
-      }
-    ]
-    setFamilyMembers(sampleData)
-  }, [])
+  // familyMembers are provided by parent; no sample data is loaded here.
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
