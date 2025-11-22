@@ -1,10 +1,11 @@
 'use client'
-
 import { useAuth } from '@/contexts/AuthContext'
+import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
+import React from 'react';
 import { 
   Heart, 
   Users, 
@@ -24,12 +25,12 @@ interface Props {
 
 export default function Dashboard({ onNavigate }: Props) {
   const { user } = useAuth();
-  const [familyCount, setFamilyCount] = React.useState(0);
-  const [riskFactors, setRiskFactors] = React.useState(0);
-  const [activePlans, setActivePlans] = React.useState(0);
-  const [healthScore, setHealthScore] = React.useState('N/A');
+  const [familyCount, setFamilyCount] = useState(0);
+  const [riskFactors, setRiskFactors] = useState(0);
+  const [activePlans, setActivePlans] = useState(0);
+  const [healthScore, setHealthScore] = useState('N/A');
 
-  React.useEffect(() => {
+  useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return;
     // Fetch family members
@@ -84,6 +85,9 @@ export default function Dashboard({ onNavigate }: Props) {
   };
   const profilePercent = computeProfilePercent();
 
+  // consider profile complete when core fields are filled
+  const isProfileComplete = !!(user && user.name && (user as any).dateOfBirth && (user as any).gender && (user as any).height && (user as any).weight)
+
   const quickStats = [
     {
       title: 'Health Score',
@@ -125,7 +129,7 @@ export default function Dashboard({ onNavigate }: Props) {
       description: 'Add your personal health information',
       icon: Users,
       action: 'profile',
-      completed: false
+      completed: isProfileComplete
     },
     {
       title: 'Add Family Members',

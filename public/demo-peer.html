@@ -1,0 +1,115 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Demo Peer - PHN System</title>
+    <style>
+      body { font-family: Arial, sans-serif; padding: 20px; }
+      video { width: 45%; border-radius: 8px; }
+      .controls { margin-bottom: 12px; }
+    </style>
+  </head>
+  <body>
+    <h1>Demo Peer (open alongside /emergency)</h1>
+    <div class="controls">
+      <label>Room name: <input id="room" value="doctor-Dr-Aisha-Khan" style="width:320px" /></label>
+      <button id="join">Join Room</button>
+    </div>
+    <div id="videos" style="display:flex; gap:10px; flex-wrap:wrap"></div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+      const SOCKET_URL = 'http://localhost:4000'
+      let socket
+      const peers = {}
+      let localStream
+
+      document.getElementById('join').addEventListener('click', async () => {
+        const room = document.getElementById('room').value.trim()
+        if (!room) return alert('Enter room')
+
+        socket = io(SOCKET_URL)
+
+        socket.on('connect', () => {
+          console.log('connected', socket.id)
+          socket.emit('join-room', room)
+        })
+
+        socket.on('user-connected', async (userId) => {
+          console.log('user-connected', userId)
+          // create peer connection and send offer
+          await ensureLocalStream()
+          const pc = new RTCPeerConnection()
+          peers[userId] = pc
+          localStream.getTracks().forEach(t => pc.addTrack(t, localStream))
+
+          pc.ontrack = (e) => {
+            appendRemoteVideo(e.streams[0], userId)
+          }
+
+          pc.onicecandidate = (e) => {
+            if (e.candidate) socket.emit('signal', { to: userId, signal: { candidate: e.candidate } })
+          }
+
+          const offer = await pc.createOffer()
+          await pc.setLocalDescription(offer)
+          socket.emit('signal', { to: userId, signal: { sdp: offer } })
+        })
+
+        socket.on('signal', async (data) => {
+          if (!data) return
+          let pc = peers[data.from]
+          if (!pc) {
+            pc = new RTCPeerConnection()
+            peers[data.from] = pc
+            await ensureLocalStream()
+            localStream.getTracks().forEach(t => pc.addTrack(t, localStream))
+            pc.ontrack = (e) => appendRemoteVideo(e.streams[0], data.from)
+            pc.onicecandidate = (e) => { if (e.candidate) socket.emit('signal', { to: data.from, signal: { candidate: e.candidate } }) }
+          }
+
+          if (data.signal.sdp) {
+            await pc.setRemoteDescription(new RTCSessionDescription(data.signal.sdp))
+            if (data.signal.sdp.type === 'offer') {
+              const answer = await pc.createAnswer()
+              await pc.setLocalDescription(answer)
+              socket.emit('signal', { to: data.from, signal: { sdp: answer } })
+            }
+          }
+
+          if (data.signal.candidate) {
+            await pc.addIceCandidate(new RTCIceCandidate(data.signal.candidate))
+          }
+        })
+
+        socket.on('user-disconnected', (id) => {
+          if (peers[id]) {
+            peers[id].close()
+            delete peers[id]
+          }
+        })
+      })
+
+      async function ensureLocalStream() {
+        if (localStream) return
+        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        const v = document.createElement('video')
+        v.srcObject = localStream
+        v.muted = true
+        v.autoplay = true
+        v.playsInline = true
+        document.getElementById('videos').appendChild(v)
+      }
+
+      function appendRemoteVideo(stream, id) {
+        const v = document.createElement('video')
+        v.srcObject = stream
+        v.autoplay = true
+        v.playsInline = true
+        v.id = 'remote-' + id
+        document.getElementById('videos').appendChild(v)
+      }
+    </script>
+  </body>
+</html>

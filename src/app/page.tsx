@@ -1,6 +1,7 @@
-'use client'
+ 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { AuthProvider } from '@/contexts/AuthContext'
 import Header from '@/components/layout/Header'
 import Navigation from '@/components/layout/Navigation'
@@ -52,7 +53,9 @@ type Appointment = {
 }
 
 export default function Home() {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState('dashboard')
+  const [showSplash, setShowSplash] = useState(true)
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([])
   const [dietPlan, setDietPlan] = useState<DayPlan[] | null>(null)
   const [appointments, setAppointments] = useState<Appointment[]>([])
@@ -95,6 +98,31 @@ export default function Home() {
     <AuthProvider>
       <div className="min-h-screen bg-gray-50">
         <Header />
+
+        {/* Splash overlay shown before entering the app */}
+        {showSplash && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center mx-4">
+              <h2 className="text-2xl font-semibold mb-4">Welcome to PHN System</h2>
+              <p className="text-sm text-gray-600 mb-6">Choose an option to continue</p>
+              <div className="flex gap-4 justify-center">
+                <button
+                  className="px-6 py-2 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700 focus:outline-none"
+                  onClick={() => setShowSplash(false)}
+                >
+                  Home
+                </button>
+                <button
+                  className="px-6 py-2 rounded-md bg-red-600 text-white font-medium hover:bg-red-700 focus:outline-none"
+                  onClick={() => router.push('/emergency')}
+                >
+                  Emergency
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
           {renderContent()}
